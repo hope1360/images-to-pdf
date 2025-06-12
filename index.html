@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تبدیل تصاویر به PDF (حجم کم)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Tahoma, Arial, sans-serif;
+            direction: rtl;
+            text-align: center;
+            padding: 20px;
+            background: #f3f3f3;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0px 0px 10px #aaa;
+        }
+        input, button {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #loader {
+            display: none;
+            font-weight: bold;
+            color: orange;
+        }
+        #downloadBtn {
+            display: none;
+            background: #28a745;
+        }
+        #downloadBtn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+ <h3>در ابتدا تصاویر خود را انتخاب نمایید</h3>
+        <input type="file" id="imageInput" multiple accept="image/*">
+        <button onclick="generatePDF()">ساخت PDF</button>
+
+        <p id="loader">در حال پردازش... لطفاً صبر کنید</p>
+        <button id="downloadBtn">دانلود PDF</button>
+    </div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+        let pdfBlobUrl = '';
+
+        function generatePDF() {
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('downloadBtn').style.display = 'none';
+
+            let files = document.getElementById('imageInput').files;
+            if (files.length === 0) {
+                alert("لطفاً حداقل یک تصویر انتخاب کنید!");
+                document.getElementById('loader').style.display = 'none';
+                return;
+            }
+
+            let pdf = new jsPDF({ format: "a4" });
+            let completed = 0;
+            for (let file of files) {
+                let reader = new FileReader();
+                reader.onload = function(event) {
+                    let img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        let width = 180;
+                        let height = (img.naturalHeight / img.naturalWidth) * width;
+                        pdf.addImage(img, 'JPEG', 10, 10, width, height, '', 'FAST');
+                        if (completed < files.length - 1) pdf.addPage();
+                        completed++;
+
+                        if (completed === files.length) {
+                            document.getElementById('loader').style.display = 'none';
+                            pdfBlobUrl = URL.createObjectURL(pdf.output("blob"));
+                            document.getElementById('downloadBtn').style.display = 'block';
+                        }
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        document.getElementById('downloadBtn').addEventListener("click", function() {
+            let a = document.createElement("a");
+            a.href = pdfBlobUrl;
+            a.download = "images.pdf";
+            document.body.appendChild(a);
+            a.click();
+            document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('imageInput').value = '';
+        });
+    </script>
+
+</body>
+</html>
